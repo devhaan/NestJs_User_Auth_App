@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 // import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -15,29 +15,33 @@ export class UserService {
     private jwtService: JwtService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
+  private logger = new Logger('UserServices');
   async create(createUserDto: CreateUserDto) {
-    return "demo"
-    // const userData = await this.findOne(createUserDto.email);
-    // if (userData.length > 0) {
-    //   return 'Already exist';
-    // }
-    // const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
+    try {
+      const userData = await this.findOne(createUserDto.email);
+      if (userData.length > 0) {
+        throw new Error('Already Register please Login');
+      }
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
 
-    // const user = {
-    //   name: createUserDto.name,
-    //   email: createUserDto.email,
-    //   password: hashedPassword,
-    // };
-    // const createdUser = new this.userModel(user);
-    // return createdUser;
-    // createdUser.save();
-    // delete user.password;
+      const user = {
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: hashedPassword,
+      };
+      const createdUser = new this.userModel(user);
+      createdUser.save();
+      delete user.password;
 
-    // return user;
+      return user;
+    } catch (err) {
+      this.logger.verbose(`breaking in /user/signup err ${err}`);
+      return { error: err.message };
+    }
   }
 
   findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
+    return this.userModel.find({}, { name: 1, email: 1, _id: 0 }).exec();
   }
 
   findOne(email: string) {
@@ -51,21 +55,37 @@ export class UserService {
   remove(email: string) {
     return this.userModel.findOneAndRemove({ email: email });
   }
-  async login(loginDto: LoginDto) {
-    const userData = await this.findOne(loginDto.email);
-    return 'hh';
-    if (userData.length == 0) {
-      return 'Invalid User';
-    } else return 'hello';
-    return userData;
-    // if (!(await bcrypt.compare(loginDto.password, userData.password))) {
-    //   return 'Invalid Credential';
-    // }
+  async login(loginDto: LoginDto, response) {
+    try {
+      const userData = await this.findOne(loginDto.email);
+      if (userData.length == 0) {
+        throw new Error('Invalid User/ Please SignUp first');
+      }
 
-    //const jwt = await this.jwtService.signAsync({ id: userData.id });
+      if (!(await bcrypt.compare(loginDto.password, userData[0].password))) {
+        throw new Error('Invalid Credential');
+      }
 
-    //response.cookie('jwt', jwt, { httpOnly: true });
+      const jwt = await this.jwtService.signAsync({ id: userData[0].id });
 
-    // return jwt;
+      response.cookie('jwt', jwt, { httpOnly: true });
+
+      return { msg: 'Logged in' };
+    } catch (err) {
+      this.logger.verbose(`breaking in /user/login err ${err}`);
+      return { error: err.message };
+    }
+  }
+
+  logout(response) {
+    try {
+      response.clearCookie('jwt');
+      return {
+        message: 'Logged out',
+      };
+    } catch (err) {
+      this.logger.verbose(`breaking in /user/logout err ${err}`);
+      return { error: err.message };
+    }
   }
 }
