@@ -1,7 +1,6 @@
 import { Model } from 'mongoose';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-// import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './entities/user.entity';
@@ -18,11 +17,18 @@ export class UserService {
   private logger = new Logger('UserServices');
   async create(createUserDto: CreateUserDto) {
     try {
+      if (
+        createUserDto['password'] != undefined &&
+        createUserDto['confirmPassword'] != undefined &&
+        createUserDto['password'] != createUserDto['confirmPassword']
+      ) {
+        throw new Error('Pass/ConFirm Pass must be same');
+      }
       const userData = await this.findOne(createUserDto.email);
       if (userData.length > 0) {
         throw new Error('Already Register please Login');
       }
-      const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
+      const hashedPassword = await bcrypt.hash(createUserDto['password'], 12);
 
       const user = {
         name: createUserDto.name,

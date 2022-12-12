@@ -9,11 +9,11 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
-  password: string;
+  confirmPassword: string;
 
   @IsNotEmpty()
   @IsString()
-  confirmPassword: string;
+  password: string;
 
   @IsNotEmpty()
   @IsString()

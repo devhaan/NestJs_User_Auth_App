@@ -11,7 +11,6 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
 import { LoginDto } from './dto/LoginDto';
 import { Response, Request } from 'express';
 import { Logger } from '@nestjs/common';
@@ -22,7 +21,6 @@ export class UserController {
   private logger = new Logger('UserController');
   @Post('/signup')
   create(@Body() createUserDto: CreateUserDto) {
-    this.logger.verbose(`/user/signup hited for ${createUserDto.email}`);
     return this.userService.create(createUserDto);
   }
 
